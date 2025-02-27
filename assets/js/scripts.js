@@ -17,40 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("Gallery cards found:", galleryCards.length);
     console.log("Is mobile:", isMobile);
     
-    // Properly set up videos for preview
+    // Aggressive video preloading for better previews, especially on desktop
     galleryCards.forEach(card => {
         const video = card.querySelector('video');
         if (video) {
             // Apply a CSS class to prevent black flash before play
             video.classList.add('video-preview');
             
-            // Always force preload to ensure first frame is visible immediately
+            // Force full preload for all devices
             video.preload = "auto";
+            video.muted = true; // Ensure autoplay works
             
-            // If no poster attribute, we'll use the first frame
-            if (!video.hasAttribute('poster') || video.getAttribute('poster') === '') {
-                // Force immediate load
-                video.load();
-                
-                // Set initial frame as soon as possible
-                video.addEventListener('loadeddata', () => {
-                    // Ensure we start at the very beginning
-                    video.currentTime = 0;
-                    // Hold this frame as the preview
-                    video.pause();
-                    // Remove loading indication
-                    video.classList.add('ready');
-                }, { once: true });
-                
-                // Fallback in case loadeddata doesn't fire
-                setTimeout(() => {
-                    if (!video.classList.contains('ready')) {
-                        video.currentTime = 0;
-                        video.pause();
-                        video.classList.add('ready');
-                    }
-                }, 100);
-            }
+            // Force preload immediately
+            video.load();
+            
+            // More aggressive frame loading
+            const attemptToShowFrame = () => {
+                // Ensure we start at the very beginning
+                video.currentTime = 0.01; // Slightly after start to avoid black frame
+                video.pause();
+                video.classList.add('ready');
+                console.log("Frame loaded for video:", video.src);
+            };
+            
+            // Try multiple events to catch the first available frame
+            video.addEventListener('loadeddata', attemptToShowFrame, { once: true });
+            video.addEventListener('loadedmetadata', attemptToShowFrame, { once: true });
+            
+            // Additional attempts if events don't fire
+            setTimeout(attemptToShowFrame, 100);
+            setTimeout(attemptToShowFrame, 500);
         }
     });
 
@@ -114,8 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 playPromise.then(() => {
                     card.classList.add('playing');
                     
-                    // Hide overlay with delay for better user experience
-                    hideOverlayWithDelay(card, isMobile ? 1500 : 800);
+                    // Hide overlay immediately on desktop, with delay on mobile
+                    hideOverlayWithDelay(card, isMobile ? 1500 : 0);
                     currentPlaying = video;
                 }).catch(error => {
                     console.log("Playback prevented:", error);

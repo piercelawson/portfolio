@@ -259,10 +259,12 @@ header p {
     /* Maintain first frame visibility */
     object-fit: cover;
     min-height: 100%;
+    visibility: hidden; /* Hide until first frame is ready */
 }
 
 .gallery-card video.video-preview.ready {
     opacity: 1;
+    visibility: visible; /* Show once frame is loaded */
 }
 
 .gallery-card.playing video.video-preview {
