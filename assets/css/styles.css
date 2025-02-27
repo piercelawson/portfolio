@@ -29,8 +29,9 @@ header {
     width: 100%;
     z-index: 10;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    transition: padding 0.3s ease, height 0.3s ease;
-    overflow-x: hidden;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    height: auto;
 }
 
 header.hidden { 
@@ -57,17 +58,25 @@ header p {
     header {
         padding: 1rem;
         height: auto;
+        max-height: 120px;
     }
     header.shrunk {
         padding: 0.5rem 1rem;
-        height: 60px;
+        max-height: 60px;
         width: 100%;
+        overflow: hidden;
     }
     header.shrunk h1 {
         font-size: clamp(1.2rem, 2vw, 1.5rem);
+        transform: scale(0.9);
+        transform-origin: center;
+        margin: 0;
     }
     header.shrunk p {
         font-size: clamp(0.8rem, 1vw, 1rem);
+        transform: scale(0.9);
+        transform-origin: center top;
+        margin: 0;
     }
 }
 
