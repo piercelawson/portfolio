@@ -251,6 +251,17 @@ header p {
     display: block;
 }
 
+/* Prevent white flash before video plays */
+.gallery-card video.video-preview {
+    background-color: #1d3557; /* Match overlay color */
+    opacity: 0.9; /* Slightly transparent until playing */
+    transition: opacity 0.3s ease;
+}
+
+.gallery-card.playing video.video-preview {
+    opacity: 1;
+}
+
 /* Desktop behavior */
 @media (min-width: 769px) {
     .gallery-grid {

@@ -46,7 +46,9 @@
                 if (isset($project['isImage'])) {
                     echo '<img src="' . $project['src'] . '" alt="' . $project['title'] . '">';
                 } else {
-                    echo '<video muted loop playsinline preload="metadata" poster="' . ($project['poster'] ?? '') . '"><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn\'t support video.</video>';
+                    // Ensure poster is always set with a fallback to empty string
+                    $posterAttr = !empty($project['poster']) ? ' poster="' . $project['poster'] . '"' : '';
+                    echo '<video muted loop playsinline preload="metadata"' . $posterAttr . '><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn\'t support video.</video>';
                 }
                 echo '<div class="gallery-overlay"><h3>' . $project['title'] . '</h3></div></div></a></div>';
             }

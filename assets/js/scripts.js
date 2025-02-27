@@ -17,12 +17,26 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log("Gallery cards found:", galleryCards.length);
     console.log("Is mobile:", isMobile);
     
-    // Set poster attribute to show first frame for all videos
+    // Properly set up videos for preview
     galleryCards.forEach(card => {
         const video = card.querySelector('video');
-        if (video && !video.hasAttribute('poster')) {
-            // If no poster was specified, use "auto" to display first frame
-            video.setAttribute('poster', 'auto');
+        if (video) {
+            // Apply a CSS class to prevent white flash before play
+            video.classList.add('video-preview');
+            
+            // If the video doesn't have a poster, try to load the first frame
+            if (!video.hasAttribute('poster') || video.getAttribute('poster') === 'auto') {
+                // Load just enough to get the first frame
+                video.preload = "metadata";
+                video.load();
+                
+                // Seek to first frame once metadata is loaded
+                video.addEventListener('loadedmetadata', () => {
+                    video.currentTime = 0;
+                    // Hold this frame as the preview
+                    video.pause();
+                }, { once: true });
+            }
         }
     });
 
@@ -63,10 +77,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
+            // Remember the current time to resume from same position
+            const currentTime = video.currentTime;
+            
             if (!playedVideos.has(video)) {
                 playedVideos.add(video);
-                // Make sure video is properly loaded
+                // Make sure video is properly loaded but keep the current time
                 video.load();
+                // Go back to where we were
+                video.currentTime = currentTime > 0 ? currentTime : 0;
             }
             
             console.log("Playing video:", video.src);
