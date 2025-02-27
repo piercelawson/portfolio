@@ -13,47 +13,75 @@ document.addEventListener('DOMContentLoaded', () => {
     let velocity = 0;
     let isAnimating = false;
     const playedVideos = new Set();
+    const videoStates = new Map(); // Store video states (time position, etc.)
     
     console.log("Gallery cards found:", galleryCards.length);
     console.log("Is mobile:", isMobile);
     
     // Aggressive video preloading for better previews, especially on desktop
-    galleryCards.forEach(card => {
-        const video = card.querySelector('video');
-        if (video) {
-            // Apply a CSS class to prevent black flash before play
-            video.classList.add('video-preview');
-            
-            // Force full preload for all devices
-            video.preload = "auto";
-            video.muted = true; // Ensure autoplay works
-            
-            // Force preload immediately
-            video.load();
-            
-            // More aggressive frame loading
-            const attemptToShowFrame = () => {
-                // Ensure we start at the very beginning
-                video.currentTime = 0.01; // Slightly after start to avoid black frame
-                video.pause();
-                video.classList.add('ready');
-                // Make thumbnail visible
-                video.style.visibility = 'visible';
-                console.log("Frame loaded for video:", video.src);
-            };
-            
-            // Try multiple events to catch the first available frame
-            video.addEventListener('loadeddata', attemptToShowFrame, { once: true });
-            video.addEventListener('loadedmetadata', attemptToShowFrame, { once: true });
-            video.addEventListener('canplay', attemptToShowFrame, { once: true });
-            
-            // Additional attempts if events don't fire - more frequent for mobile
-            setTimeout(attemptToShowFrame, 100);
-            setTimeout(attemptToShowFrame, 300);
-            setTimeout(attemptToShowFrame, 500);
-            setTimeout(attemptToShowFrame, 1000);
-        }
-    });
+    function preloadAllVideos() {
+        galleryCards.forEach(card => {
+            const video = card.querySelector('video');
+            if (video) {
+                // Apply a CSS class to prevent black flash before play
+                video.classList.add('video-preview');
+                
+                // Force full preload for all devices
+                video.preload = "auto";
+                video.muted = true; // Ensure autoplay works
+                video.setAttribute('playsinline', ''); // iOS compatibility
+                
+                // Force preload immediately
+                video.load();
+                
+                // Store initial state
+                videoStates.set(video, {
+                    lastTime: 0,
+                    hasLoaded: false,
+                    attemptsMade: 0
+                });
+                
+                // More aggressive frame loading
+                const prepareVideoFrame = () => {
+                    const state = videoStates.get(video);
+                    if (!state) return;
+                    
+                    if (state.hasLoaded) return; // Already loaded a frame
+                    state.attemptsMade++;
+                    
+                    try {
+                        // Ensure we're at the first frame
+                        video.currentTime = 0.01; // Slightly after start to avoid black frame
+                        video.pause();
+                        
+                        // Make it visible only once we have a frame
+                        if (video.readyState >= 2) { // HAVE_CURRENT_DATA or better
+                            video.classList.add('ready');
+                            video.style.visibility = 'visible';
+                            state.hasLoaded = true;
+                            console.log("Frame loaded for video:", video.src);
+                        } else if (state.attemptsMade < 10) {
+                            // Try again soon if we haven't hit max attempts
+                            setTimeout(prepareVideoFrame, 200);
+                        }
+                    } catch (err) {
+                        console.error("Error preparing video frame:", err);
+                    }
+                };
+                
+                // Try multiple events to catch the first available frame
+                video.addEventListener('loadeddata', prepareVideoFrame, { once: true });
+                video.addEventListener('loadedmetadata', prepareVideoFrame, { once: true });
+                video.addEventListener('canplay', prepareVideoFrame, { once: true });
+                
+                // Initial attempt
+                setTimeout(prepareVideoFrame, 100);
+            }
+        });
+    }
+    
+    // Call preload function
+    preloadAllVideos();
 
     // Handle header visibility on scroll
     window.addEventListener('scroll', () => {
@@ -78,33 +106,57 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        console.log("Video found in card:", video.src);
+        // Ensure we have a state object for this video
+        if (!videoStates.has(video)) {
+            videoStates.set(video, {
+                lastTime: 0,
+                hasLoaded: video.classList.contains('ready'),
+                attemptsMade: 0
+            });
+        }
         
-        // Prevent constant start/stop cycles
-        if (shouldPlay && (video.paused || video.ended)) {
+        const videoState = videoStates.get(video);
+        
+        // When we should play the video
+        if (shouldPlay) {
+            // Exit if video is already playing
+            if (!video.paused && !video.ended) return;
+            
             // If another video is playing, pause it first
             if (currentPlaying && currentPlaying !== video) {
                 const previousCard = currentPlaying.closest('.gallery-card');
                 if (previousCard) {
+                    // Save current state before pausing
+                    const prevState = videoStates.get(currentPlaying);
+                    if (prevState) {
+                        prevState.lastTime = currentPlaying.currentTime;
+                    }
+                    
                     currentPlaying.pause();
                     showOverlay(previousCard);
                     previousCard.classList.remove('playing');
                 }
             }
             
-            // Remember the current time to resume from same position
-            const currentTime = video.currentTime;
-            
-            if (!playedVideos.has(video)) {
-                playedVideos.add(video);
-                // Don't reload the video as it causes flashing
-                // Just ensure we have a valid time position
-                if (currentTime <= 0 || isNaN(currentTime)) {
-                    video.currentTime = 0;
+            // Prepare the video for playback
+            try {
+                // Make sure we have a valid time position to resume from
+                if (videoState.lastTime > 0 && video.duration > 0) {
+                    // Resume from last position, but ensure it's valid
+                    const targetTime = Math.min(videoState.lastTime, video.duration - 0.1);
+                    video.currentTime = targetTime;
+                } else {
+                    // Start from beginning if no valid last time
+                    video.currentTime = 0.01; // Slightly after start to avoid black frame
                 }
-            } else {
-                // For videos already played, make sure we resume from the correct position
-                video.currentTime = currentTime > 0 ? currentTime : 0;
+                
+                // Ensure visibility and ready state before playing
+                video.style.visibility = 'visible';
+                
+                // Add to played videos set to track history
+                playedVideos.add(video);
+            } catch (err) {
+                console.error("Error preparing video for playback:", err);
             }
             
             console.log("Playing video:", video.src);
@@ -182,10 +234,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate how close the element's center is to the viewport's center
         const distanceFromCenter = Math.abs(elementCenter - viewportCenter);
         
-        // Element is considered "centered" if its center is within 20% of the viewport's center
-        const threshold = windowHeight * 0.2;
+        // Element is considered "centered" if its center is within 30% of the viewport's center
+        // This wider threshold makes it more stable, preventing flicker
+        const threshold = windowHeight * 0.3;
         
-        return distanceFromCenter < threshold;
+        // Also check that it's actually visible (not completely off-screen)
+        const isVisible = (
+            rect.bottom > 0 &&
+            rect.top < windowHeight &&
+            rect.height > 0
+        );
+        
+        return isVisible && (distanceFromCenter < threshold);
     }
     
     // Preload all videos to prevent stuttering on mobile
@@ -222,27 +282,43 @@ document.addEventListener('DOMContentLoaded', () => {
         let scrollTimeout;
         let lastCheckTime = 0;
         let isScrolling = false;
-        const THROTTLE_DELAY = 400; // Only check every 400ms to avoid rapid start/stop
+        const THROTTLE_DELAY = 250; // Check more frequently, but not too often
+        let scheduledCheck = false;
         
         function checkVideoVisibility() {
-            // Don't check too frequently
-            const now = Date.now();
-            if (now - lastCheckTime < THROTTLE_DELAY) return;
-            lastCheckTime = now;
+            // Track when we last checked
+            lastCheckTime = Date.now();
+            scheduledCheck = false;
             
-            // Stop all videos while scrolling to prevent stuttering
+            // Stop all videos while actively scrolling to prevent stuttering
             if (isScrolling) {
                 galleryCards.forEach(card => {
                     const video = card.querySelector('video');
                     if (video && !video.paused) {
+                        // Save position before pausing
+                        const state = videoStates.get(video);
+                        if (state) {
+                            state.lastTime = video.currentTime;
+                        }
+                        
                         video.pause();
                         showOverlay(card);
                     }
                 });
+                
+                // Schedule another check after scroll ends
+                if (!scheduledCheck) {
+                    scheduledCheck = true;
+                    scrollTimeout = setTimeout(() => {
+                        isScrolling = false;
+                        checkVideoVisibility();
+                    }, 300);
+                }
+                
                 return;
             }
             
-            // Only play one video at a time - the most centered one
+            // Only play one video at a time - find the most centered one
             let bestCard = null;
             let bestDistance = Infinity;
             

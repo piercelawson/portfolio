@@ -254,14 +254,19 @@ header p {
 /* Prevent black flash before video plays */
 .gallery-card video.video-preview {
     background-color: #1d3557; /* Match overlay color */
-    opacity: 0.9; /* Slightly transparent until playing */
-    transition: opacity 0.3s ease, visibility 0s;
+    opacity: 0; /* Start fully transparent */
+    transition: opacity 0.3s ease;
     /* Maintain first frame visibility */
     object-fit: cover;
     min-height: 100%;
     visibility: hidden; /* Hide until first frame is ready */
     transform: translateZ(0); /* Hardware acceleration for mobile */
-    will-change: visibility, opacity; /* Optimization hint */
+    will-change: transform, opacity; /* Optimization hint */
+    position: relative;
+    z-index: 1;
+    /* Prevent Chrome flickering issue */
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .gallery-card video.video-preview.ready {
@@ -273,7 +278,11 @@ header p {
 @media (max-width: 768px) {
     .gallery-card video.video-preview {
         opacity: 1;
-        /* Still rely on .ready class for visibility */
+        background-color: #1d3557; /* Ensure background color is visible */
+    }
+    
+    .gallery-card video.video-preview.ready {
+        background-color: transparent; /* Remove background once loaded */
     }
 }
 
