@@ -26,6 +26,101 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Handle header visibility on scroll
+    window.addEventListener('scroll', () => {
+        const currentScrollY = window.scrollY;
+        
+        // Header shrink/show logic
+        if (currentScrollY > 100) {
+            header.classList.add('shrunk');
+        } else {
+            header.classList.remove('shrunk');
+        }
+        
+        // Update last scroll position
+        lastScrollY = currentScrollY;
+    });
+
+    // Handle video playback with optimizations
+    function handleVideoPlayback(card, shouldPlay) {
+        const video = card.querySelector('video');
+        if (!video) {
+            console.log("No video found in card:", card);
+            return;
+        }
+        
+        console.log("Video found in card:", video.src);
+        
+        // Prevent constant start/stop cycles
+        if (shouldPlay && (video.paused || video.ended)) {
+            // If another video is playing, pause it first
+            if (currentPlaying && currentPlaying !== video) {
+                const previousCard = currentPlaying.closest('.gallery-card');
+                if (previousCard) {
+                    currentPlaying.pause();
+                    showOverlay(previousCard);
+                    previousCard.classList.remove('playing');
+                }
+            }
+            
+            if (!playedVideos.has(video)) {
+                playedVideos.add(video);
+                // Make sure video is properly loaded
+                video.load();
+            }
+            
+            console.log("Playing video:", video.src);
+            // Use a silent catch to prevent console errors on mobile autoplay restrictions
+            const playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    card.classList.add('playing');
+                    
+                    // Hide overlay with delay for better user experience
+                    hideOverlayWithDelay(card, isMobile ? 1500 : 800);
+                    currentPlaying = video;
+                }).catch(error => {
+                    console.log("Playback prevented:", error);
+                    showOverlay(card);
+                });
+            }
+        } else if (!shouldPlay && !video.paused) {
+            video.pause();
+            card.classList.remove('playing');
+            showOverlay(card);
+        }
+    }
+
+    // Hide overlay with delay
+    function hideOverlayWithDelay(card, delay = 0) {
+        const overlay = card.querySelector('.gallery-overlay');
+        if (!overlay) return;
+        
+        clearTimeout(overlayTimeout);
+        
+        if (delay) {
+            overlayTimeout = setTimeout(() => {
+                overlay.classList.add('hidden');
+                console.log("Overlay hidden after 2s for:", card.querySelector('video')?.src || "unknown");
+            }, delay);
+        } else {
+            overlay.classList.add('hidden');
+        }
+    }
+
+    // Show overlay
+    function showOverlay(card) {
+        if (!card) return;
+        
+        const overlay = card.querySelector('.gallery-overlay');
+        if (!overlay) return;
+        
+        clearTimeout(overlayTimeout);
+        overlay.classList.remove('hidden');
+        console.log("Overlay reset for card:", card);
+    }
+
     // Function to check if an element is in viewport
     function isInViewport(element) {
         const rect = element.getBoundingClientRect();
@@ -66,93 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Attempt to preload a bit of the video
                 setTimeout(() => {
                     video.load();
-                }, 500);
+                }, 1000); // Delay preloading to not block initial page load
             }
         });
-    }
-    
-    // Call preload on page load
-    preloadVideos();
-
-    // Hide overlay with delay
-    function hideOverlayWithDelay(card, delay = 0) {
-        const overlay = card.querySelector('.gallery-overlay');
-        if (!overlay) return;
-        
-        clearTimeout(overlayTimeout);
-        
-        if (delay) {
-            overlayTimeout = setTimeout(() => {
-                overlay.classList.add('hidden');
-            }, delay);
-        } else {
-            overlay.classList.add('hidden');
-        }
-    }
-
-    // Show overlay
-    function showOverlay(card) {
-        if (!card) return;
-        
-        const overlay = card.querySelector('.gallery-overlay');
-        if (!overlay) return;
-        
-        clearTimeout(overlayTimeout);
-        overlay.classList.remove('hidden');
-    }
-    
-    // Cleanup when leaving page
-    window.addEventListener('beforeunload', () => {
-        if (currentPlaying) {
-            currentPlaying.pause();
-            currentPlaying = null;
-        }
-    });
-
-    // Handle video playback with optimizations
-    function handleVideoPlayback(card, shouldPlay) {
-        const video = card.querySelector('video');
-        if (!video) {
-            return;
-        }
-        
-        // Prevent constant start/stop cycles
-        if (shouldPlay && (video.paused || video.ended)) {
-            // If another video is playing, pause it first
-            if (currentPlaying && currentPlaying !== video) {
-                const previousCard = currentPlaying.closest('.gallery-card');
-                currentPlaying.pause();
-                showOverlay(previousCard);
-                previousCard.classList.remove('playing');
-            }
-            
-            if (!playedVideos.has(video)) {
-                playedVideos.add(video);
-                // Make sure video is properly loaded
-                video.load();
-            }
-            
-            // Use a silent catch to prevent console errors on mobile autoplay restrictions
-            const playPromise = video.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.then(() => {
-                    card.classList.add('playing');
-                    
-                    // Hide overlay with delay for better user experience
-                    hideOverlayWithDelay(card, 800);
-                    currentPlaying = video;
-                }).catch(error => {
-                    console.log("Playback prevented:", error);
-                    showOverlay(card);
-                });
-            }
-        } else if (!shouldPlay && !video.paused) {
-            video.pause();
-            card.classList.remove('playing');
-            card.classList.remove('playing');
-            showOverlay(card);
-        }
     }
 
     // Desktop hover behavior
@@ -238,50 +249,58 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Check videos on page load
         window.addEventListener('load', () => {
-                checkVideoVisibility();
-            }, 100); // Short delay to debounce rapid scrolling
+            preloadVideos();
+            setTimeout(checkVideoVisibility, 1000);
         });
     }
 
-    // Header scroll behavior
-    window.addEventListener('scroll', () => {
-        const currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 100) {
-            header.classList.add('hidden');
-        } else {
-            header.classList.remove('hidden');
-        }
-        lastScrollY = currentScrollY;
-    });
-
-    // Spinning Circle Animation and Behavior
+    // Spinning circle animation
     if (spinningCircle) {
         const spinningGroup = spinningCircle.querySelector('.spinning-group');
-
-        // Animation loop with slower easing
-        const animate = () => {
-            if (Math.abs(velocity) > 0.1 || isAnimating) {
-                rotation += velocity;
+        
+        // Smoothly animate the circle rotation with requestAnimationFrame
+        function animateCircle(timestamp) {
+            if (!isAnimating) return;
+            
+            // Base rotation on scroll amount
+            rotation += velocity;
+            
+            // Apply rotation transform
+            if (spinningGroup) {
                 spinningGroup.style.transform = `rotate(${rotation}deg)`;
-                velocity *= 0.8; // Slower decay for longer, gentler coasting
-                requestAnimationFrame(animate);
-            } else {
-                isAnimating = false;
             }
-        };
-
-        // Interaction
-        spinningCircle.addEventListener('click', () => {
-            velocity = 8; // Faster spin on click
+            
+            // Apply friction to slow down when not scrolling
+            velocity *= 0.98;
+            
+            // Keep animating
+            requestAnimationFrame(animateCircle);
+        }
+        
+        // Start animation initially
+        function startAnimation() {
             if (!isAnimating) {
                 isAnimating = true;
-                animate();
+                requestAnimationFrame(animateCircle);
             }
-        });
+        }
 
-        // Auto-start animation
-        velocity = 2; // Initial gentle rotation
-        isAnimating = true;
-        animate();
+        // React to scroll events
+        window.addEventListener('scroll', () => {
+            velocity = 0.5;  // Reset velocity on scroll
+            startAnimation();
+        });
+        
+        // Start with a little velocity
+        velocity = 0.5;
+        startAnimation();
     }
+    
+    // Cleanup when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (currentPlaying) {
+            currentPlaying.pause();
+            currentPlaying = null;
+        }
+    });
 });
