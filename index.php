@@ -47,8 +47,8 @@
                     echo '<img src="' . $project['src'] . '" alt="' . $project['title'] . '">';
                 } else {
                     // Always provide a poster image for better first-frame rendering
-                    $posterAttr = !empty($project['poster']) ? ' poster="' . $project['poster'] . '"' : ''; : '';
-                    echo '<video muted loop playsinline preload="metadata"' . $posterAttr . '><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn\'t support video.</video>';
+                    $posterAttr = !empty($project['poster']) ? ' poster="' . $project['poster'] . '"' : '';
+                    echo '<video muted loop playsinline preload="metadata" class="video-preview"' . $posterAttr . '><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn\'t support video.</video>';
                 }
                 echo '<div class="gallery-overlay"><h3>' . $project['title'] . '</h3></div></div></a></div>';
             }
