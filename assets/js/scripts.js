@@ -16,6 +16,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log("Gallery cards found:", galleryCards.length);
     console.log("Is mobile:", isMobile);
+    
+    // Set poster attribute to show first frame for all videos
+    galleryCards.forEach(card => {
+        const video = card.querySelector('video');
+        if (video && !video.hasAttribute('poster')) {
+            // If no poster was specified, use "auto" to display first frame
+            video.setAttribute('poster', 'auto');
+        }
+    });
 
     // Function to check if an element is in viewport
     function isInViewport(element) {
@@ -31,12 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const rect = element.getBoundingClientRect();
         const windowHeight = window.innerHeight;
         
-        // Calculate visibility percentage (how much of the element is visible)
-        const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
-        const visiblePercentage = visibleHeight / rect.height;
+        // Get center point of viewport
+        const viewportCenter = windowHeight / 2;
         
-        // Element is considered in viewport if at least 40% visible
-        return visiblePercentage >= 0.4;
+        // Get center point of element
+        const elementCenter = rect.top + (rect.height / 2);
+        
+        // Calculate how close the element's center is to the viewport's center
+        const distanceFromCenter = Math.abs(elementCenter - viewportCenter);
+        
+        // Element is considered "centered" if its center is within 20% of the viewport's center
+        const threshold = windowHeight * 0.2;
+        
+        return distanceFromCenter < threshold;
     }
     
     // Preload all videos to prevent stuttering on mobile
@@ -58,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Call preload on page load
     preloadVideos();
 
-    // Hide overlay with delay for mobile
+    // Hide overlay with delay
     function hideOverlayWithDelay(card, delay = 0) {
         const overlay = card.querySelector('.gallery-overlay');
         if (!overlay) return;
@@ -68,23 +84,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (delay) {
             overlayTimeout = setTimeout(() => {
                 overlay.classList.add('hidden');
-                console.log("Overlay hidden after 2s for:", card.querySelector('video')?.src);
             }, delay);
         } else {
             overlay.classList.add('hidden');
-            console.log("Subsequent play, hiding overlay immediately for:", card.querySelector('video')?.src);
         }
     }
 
     // Show overlay
     function showOverlay(card) {
+        if (!card) return;
+        
         const overlay = card.querySelector('.gallery-overlay');
         if (!overlay) return;
         
         clearTimeout(overlayTimeout);
         overlay.classList.remove('hidden');
-        console.log("Overlay reset for card:", card);
     }
+    
+    // Cleanup when leaving page
+    window.addEventListener('beforeunload', () => {
+        if (currentPlaying) {
+            currentPlaying.pause();
+            currentPlaying = null;
+        }
+    });
 
     // Handle video playback with optimizations
     function handleVideoPlayback(card, shouldPlay) {
@@ -94,37 +117,39 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Prevent constant start/stop cycles
-        // Only change state if the video isn't already in the desired state
         if (shouldPlay && (video.paused || video.ended)) {
+            // If another video is playing, pause it first
+            if (currentPlaying && currentPlaying !== video) {
+                const previousCard = currentPlaying.closest('.gallery-card');
+                currentPlaying.pause();
+                showOverlay(previousCard);
+                previousCard.classList.remove('playing');
+            }
+            
             if (!playedVideos.has(video)) {
                 playedVideos.add(video);
-                
-                // For first play, make sure video is properly loaded
+                // Make sure video is properly loaded
                 video.load();
             }
             
             // Use a silent catch to prevent console errors on mobile autoplay restrictions
-            video.play().then(() => {
-                card.classList.add('playing');
-                
-                // For mobile, hide overlay after 1.5s 
-                // For desktop, hide immediately
-                if (isMobile) {
-                    hideOverlayWithDelay(card, 1500);
-                } else {
-                    hideOverlayWithDelay(card, 0);
-                }
-                
-                if (currentPlaying && currentPlaying !== video) {
-                    currentPlaying.pause();
-                    showOverlay(currentPlaying.closest('.gallery-card'));
-                }
-                
-                currentPlaying = video;
-            }).catch(() => {});
+            const playPromise = video.play();
             
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    card.classList.add('playing');
+                    
+                    // Hide overlay with delay for better user experience
+                    hideOverlayWithDelay(card, 800);
+                    currentPlaying = video;
+                }).catch(error => {
+                    console.log("Playback prevented:", error);
+                    showOverlay(card);
+                });
+            }
         } else if (!shouldPlay && !video.paused) {
             video.pause();
+            card.classList.remove('playing');
             card.classList.remove('playing');
             showOverlay(card);
         }
@@ -147,7 +172,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isMobile) {
         let scrollTimeout;
         let lastCheckTime = 0;
-        const THROTTLE_DELAY = 300; // Only check every 300ms to avoid rapid start/stop
+        let isScrolling = false;
+        const THROTTLE_DELAY = 400; // Only check every 400ms to avoid rapid start/stop
         
         function checkVideoVisibility() {
             // Don't check too frequently
@@ -155,25 +181,63 @@ document.addEventListener('DOMContentLoaded', () => {
             if (now - lastCheckTime < THROTTLE_DELAY) return;
             lastCheckTime = now;
             
+            // Stop all videos while scrolling to prevent stuttering
+            if (isScrolling) {
+                galleryCards.forEach(card => {
+                    const video = card.querySelector('video');
+                    if (video && !video.paused) {
+                        video.pause();
+                        showOverlay(card);
+                    }
+                });
+                return;
+            }
+            
+            // Only play one video at a time - the most centered one
+            let bestCard = null;
+            let bestDistance = Infinity;
+            
             galleryCards.forEach(card => {
-                // More generous viewport check (75% visibility)
-                if (isInViewportBetter(card)) {
-                    handleVideoPlayback(card, true);
-                } else {
-                    handleVideoPlayback(card, false);
+                const rect = card.getBoundingClientRect();
+                const windowHeight = window.innerHeight;
+                const elementCenter = rect.top + (rect.height / 2);
+                const viewportCenter = windowHeight / 2;
+                const distance = Math.abs(elementCenter - viewportCenter);
+                
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestCard = card;
                 }
+                
+                // Pause all videos initially
+                handleVideoPlayback(card, false);
             });
+            
+            // Only play the most centered video if it's actually in viewport
+            if (bestCard && isInViewportBetter(bestCard)) {
+                handleVideoPlayback(bestCard, true);
+            }
         }
         
         // Initial check on page load with a slight delay to allow videos to load
         setTimeout(() => {
             checkVideoVisibility();
-        }, 300);
+        }, 500);
         
-        // Debounced scroll check
+        // Track scroll state
         window.addEventListener('scroll', () => {
+            isScrolling = true;
             clearTimeout(scrollTimeout);
+            
+            // After scrolling stops, wait a bit before checking visibility
             scrollTimeout = setTimeout(() => {
+                isScrolling = false;
+                checkVideoVisibility();
+            }, 300);
+        });
+        
+        // Check videos on page load
+        window.addEventListener('load', () => {
                 checkVideoVisibility();
             }, 100); // Short delay to debounce rapid scrolling
         });
