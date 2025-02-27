@@ -37,16 +37,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.currentTime = 0.01; // Slightly after start to avoid black frame
                 video.pause();
                 video.classList.add('ready');
+                // Make thumbnail visible
+                video.style.visibility = 'visible';
                 console.log("Frame loaded for video:", video.src);
             };
             
             // Try multiple events to catch the first available frame
             video.addEventListener('loadeddata', attemptToShowFrame, { once: true });
             video.addEventListener('loadedmetadata', attemptToShowFrame, { once: true });
+            video.addEventListener('canplay', attemptToShowFrame, { once: true });
             
-            // Additional attempts if events don't fire
+            // Additional attempts if events don't fire - more frequent for mobile
             setTimeout(attemptToShowFrame, 100);
+            setTimeout(attemptToShowFrame, 300);
             setTimeout(attemptToShowFrame, 500);
+            setTimeout(attemptToShowFrame, 1000);
         }
     });
 
