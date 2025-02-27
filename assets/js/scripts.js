@@ -172,10 +172,13 @@ document.addEventListener('DOMContentLoaded', () => {
         velocity = 2; // Initial gentle rotation
         isAnimating = true;
         animate();
+
+        // Animation loop with slower easing
+        const animate = () => {
             if (Math.abs(velocity) > 0.1 || isAnimating) {
                 rotation += velocity;
                 spinningGroup.style.transform = `rotate(${rotation}deg)`;
-                velocity *= 0.97; // Slower decay for longer, gentler coasting
+                velocity *= 0.8; // Slower decay for longer, gentler coasting
                 requestAnimationFrame(animate);
             } else {
                 isAnimating = false;
