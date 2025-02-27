@@ -251,11 +251,18 @@ header p {
     display: block;
 }
 
-/* Prevent white flash before video plays */
+/* Prevent black flash before video plays */
 .gallery-card video.video-preview {
     background-color: #1d3557; /* Match overlay color */
     opacity: 0.9; /* Slightly transparent until playing */
     transition: opacity 0.3s ease;
+    /* Maintain first frame visibility */
+    object-fit: cover;
+    min-height: 100%;
+}
+
+.gallery-card video.video-preview.ready {
+    opacity: 1;
 }
 
 .gallery-card.playing video.video-preview {

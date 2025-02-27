@@ -21,21 +21,35 @@ document.addEventListener('DOMContentLoaded', () => {
     galleryCards.forEach(card => {
         const video = card.querySelector('video');
         if (video) {
-            // Apply a CSS class to prevent white flash before play
+            // Apply a CSS class to prevent black flash before play
             video.classList.add('video-preview');
             
-            // If the video doesn't have a poster, try to load the first frame
-            if (!video.hasAttribute('poster') || video.getAttribute('poster') === 'auto') {
-                // Load just enough to get the first frame
-                video.preload = "metadata";
+            // Always force preload to ensure first frame is visible immediately
+            video.preload = "auto";
+            
+            // If no poster attribute, we'll use the first frame
+            if (!video.hasAttribute('poster') || video.getAttribute('poster') === '') {
+                // Force immediate load
                 video.load();
                 
-                // Seek to first frame once metadata is loaded
-                video.addEventListener('loadedmetadata', () => {
+                // Set initial frame as soon as possible
+                video.addEventListener('loadeddata', () => {
+                    // Ensure we start at the very beginning
                     video.currentTime = 0;
                     // Hold this frame as the preview
                     video.pause();
+                    // Remove loading indication
+                    video.classList.add('ready');
                 }, { once: true });
+                
+                // Fallback in case loadeddata doesn't fire
+                setTimeout(() => {
+                    if (!video.classList.contains('ready')) {
+                        video.currentTime = 0;
+                        video.pause();
+                        video.classList.add('ready');
+                    }
+                }, 100);
             }
         }
     });
@@ -82,9 +96,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!playedVideos.has(video)) {
                 playedVideos.add(video);
-                // Make sure video is properly loaded but keep the current time
-                video.load();
-                // Go back to where we were
+                // Don't reload the video as it causes flashing
+                // Just ensure we have a valid time position
+                if (currentTime <= 0 || isNaN(currentTime)) {
+                    video.currentTime = 0;
+                }
+            } else {
+                // For videos already played, make sure we resume from the correct position
                 video.currentTime = currentTime > 0 ? currentTime : 0;
             }
             
