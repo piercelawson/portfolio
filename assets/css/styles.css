@@ -267,6 +267,20 @@ header p {
     /* Prevent Chrome flickering issue */
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+    
+    /* Improved playback performance */
+    width: 100%;
+    height: 100%;
+    display: block;
+    transform-style: preserve-3d;
+    
+    /* Improve quality on mobile */
+    max-width: 100%;
+    max-height: 100%;
+    
+    /* Better performance for mobile */
+    -webkit-transform: translate3d(0,0,0);
+    transform: translate3d(0,0,0);
 }
 
 .gallery-card video.video-preview.ready {
@@ -352,12 +366,20 @@ header p {
     z-index: 5;
     pointer-events: none; /* Allow clicks to pass through */
     transition: opacity 0.3s ease;
+    will-change: opacity; /* Performance hint */
+    backface-visibility: hidden; /* Reduce flickering */
+    -webkit-backface-visibility: hidden;
 }
 
 .gallery-overlay.hidden {
     opacity: 0 !important;
     transition: opacity 0.3s ease;
     visibility: visible !important; /* Ensure visibility */
+}
+
+/* Prevent interaction during transitions */
+.gallery-card.overlay-transitioning {
+    pointer-events: none;
 }
 
 .gallery-overlay h3 {
