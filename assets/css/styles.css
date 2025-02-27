@@ -251,11 +251,11 @@ header p {
     display: block;
 }
 
-/* Prevent black flash before video plays */
+/* Video preview styling */
 .gallery-card video.video-preview {
     background-color: #1d3557; /* Match overlay color */
     opacity: 0; /* Start fully transparent */
-    transition: opacity 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0s;
     /* Maintain first frame visibility */
     object-fit: cover;
     min-height: 100%;
@@ -272,18 +272,19 @@ header p {
 .gallery-card video.video-preview.ready {
     opacity: 1;
     visibility: visible; /* Show once frame is loaded */
+    background-color: transparent; /* Remove background once loaded */
 }
 
 /* Force visibility for mobile */
 @media (max-width: 768px) {
     .gallery-card video.video-preview {
         opacity: 1;
-        background-color: #1d3557; /* Ensure background color is visible */
     }
-    
-    .gallery-card video.video-preview.ready {
-        background-color: transparent; /* Remove background once loaded */
-    }
+}
+
+/* Add a paused state for videos */
+.gallery-card video.video-preview.paused {
+    filter: brightness(0.9);
 }
 
 .gallery-card.playing video.video-preview {
