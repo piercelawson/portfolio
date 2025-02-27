@@ -4,11 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.querySelector('header');
     const hero = document.querySelector('#hero');
     const footer = document.querySelector('footer');
-    const spinningCircle = document.querySelector('[data-spinning-circle] .spinning-circle');
+    const spinningCircle = document.querySelector('.spinning-circle');
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     let currentPlaying = null;
     let overlayTimeout = null;
     let lastScrollY = window.scrollY;
+    let rotation = 0;
+    let velocity = 0;
+    let isAnimating = false;
     const playedVideos = new Set();
     
     console.log("Gallery cards found:", galleryCards.length);
@@ -143,35 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Spinning Circle Animation and Behavior
     if (spinningCircle) {
         const spinningGroup = spinningCircle.querySelector('.spinning-group');
-        let rotation = 0;
-        let velocity = 0;
-        let isAnimating = false;
-        
-        // Animation loop with slower easing
-        const animate = () => {
-            if (Math.abs(velocity) > 0.1 || isAnimating) {
-                rotation += velocity;
-                spinningGroup.style.transform = `rotate(${rotation}deg)`;
-                velocity *= 0.97; // Slower decay for longer, gentler coasting
-                requestAnimationFrame(animate);
-            } else {
-                isAnimating = false;
-            }
-        };
-
-        // Interaction
-        spinningCircle.addEventListener('click', () => {
-            velocity = 8; // Faster spin on click
-            if (!isAnimating) {
-                isAnimating = true;
-                animate();
-            }
-        });
-
-        // Auto-start animation
-        velocity = 2; // Initial gentle rotation
-        isAnimating = true;
-        animate();
 
         // Animation loop with slower easing
         const animate = () => {
