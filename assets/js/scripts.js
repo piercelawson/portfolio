@@ -281,17 +281,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleHeaderShrink() {
         const currentScroll = window.scrollY;
 
-        // Use a smoother transition based on scroll distance
-        if (currentScroll > 50) {
-            // Add class for primary state change
+        // If we've scrolled down 100px or more, shrink the header
+        if (currentScroll > 100) {
             header.classList.add('shrunk');
-
-            // Add some proportional scaling effect based on scroll amount
-            const shrinkFactor = Math.min(1, (currentScroll - 50) / 100);
-            header.style.transform = `translateY(-${shrinkFactor * 5}px) scale(${1 - shrinkFactor * 0.05})`;
         } else {
             header.classList.remove('shrunk');
-            header.style.transform = 'translateY(0) scale(1)';
         }
 
         // Calculate velocity for spinning circle rotation
