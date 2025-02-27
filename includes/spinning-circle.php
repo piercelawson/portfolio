@@ -2,7 +2,7 @@
 <a href="mailto:<?php echo $email ?? 'pierceglawson@gmail.com'; ?>" class="spinning-circle-link" data-spinning-circle>
     <svg class="spinning-circle" width="100%" height="100%" viewBox="0 0 120 120">
         <g class="spinning-group">
-            <circle cx="60" cy="60" r="50" fill="none" stroke="#e63946" stroke-width="8" />
+            <circle cx="60" cy="60" r="50" fill="none" stroke="" stroke-width="8" />
             <!-- Smiley face in center -->
             <circle cx="60" cy="60" r="25" fill="#457b9d" />
             <circle cx="50" cy="50" r="5" fill="white" /> <!-- Left eye -->
