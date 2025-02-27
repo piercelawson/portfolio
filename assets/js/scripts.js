@@ -62,49 +62,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Play video with error handling and optimized loading
+    // Play video with error handling
     function playVideo(video) {
         if (!video) return false;
 
         try {
-            // Ensure video has loaded enough for smooth playback
-            if (video.readyState < 3) { // HAVE_FUTURE_DATA = 3
-                // If not enough data, preload a bit more before playing
-                video.load();
-                
-                // Set a short timeout to allow buffer to fill
-                setTimeout(() => {
-                    startPlayback(video);
-                }, 50);
-            } else {
-                // Ready to play immediately
-                startPlayback(video);
+            // Use Promise to handle autoplay restrictions
+            const playPromise = video.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("Video playing:", video.src);
+                    currentPlaying = video;
+                    video.classList.remove('paused');
+                }).catch(error => {
+                    console.warn("Play promise error:", error);
+                    video.pause();
+                });
             }
             return true;
         } catch (e) {
             console.error("Error playing video:", e);
             return false;
-        }
-    }
-    
-    // Helper function to start actual playback
-    function startPlayback(video) {
-        // Reset the video to the beginning if it ended
-        if (video.ended) {
-            video.currentTime = 0;
-        }
-        
-        // Use Promise to handle autoplay restrictions
-        const playPromise = video.play();
-
-        if (playPromise !== undefined) {
-            playPromise.then(() => {
-                currentPlaying = video;
-                video.classList.remove('paused');
-            }).catch(error => {
-                console.warn("Play promise error:", error);
-                video.pause();
-            });
         }
     }
 
@@ -134,29 +113,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Clear any existing timeouts to prevent race conditions
         clearTimeout(overlayTimeout);
-        clearTimeout(parseInt(card.dataset.overlayTimeout, 10));
-        
-        // Add a 'transitioning' class to prevent other operations during transition
-        card.classList.add('overlay-transitioning');
         
         if (delay > 0) {
             overlayTimeout = setTimeout(() => {
                 overlay.classList.add('hidden');
                 overlay.style.opacity = '0';
-                
-                // Remove transitioning flag after animation completes
-                setTimeout(() => {
-                    card.classList.remove('overlay-transitioning');
-                }, 300); // Match transition duration in CSS
+                console.log("Overlay hidden after delay for:", card.textContent || "unknown");
             }, delay);
         } else {
             overlay.classList.add('hidden');
             overlay.style.opacity = '0';
-            
-            // Remove transitioning flag after animation completes
-            setTimeout(() => {
-                card.classList.remove('overlay-transitioning');
-            }, 300); // Match transition duration in CSS
         }
         
         // Store the timeout ID on the card element for better tracking
@@ -170,26 +136,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = card.querySelector('.gallery-overlay');
         if (!overlay) return;
 
-        // Don't modify overlay if it's currently transitioning
-        if (card.classList.contains('overlay-transitioning')) {
-            return;
-        }
-
         // Clear any existing timeouts
         clearTimeout(overlayTimeout);
         clearTimeout(parseInt(card.dataset.overlayTimeout, 10));
         
-        // Add transitioning class
-        card.classList.add('overlay-transitioning');
-        
         // Immediately show overlay
         overlay.classList.remove('hidden');
         overlay.style.opacity = '1';
-        
-        // Remove transitioning flag after animation completes
-        setTimeout(() => {
-            card.classList.remove('overlay-transitioning');
-        }, 300); // Match transition duration in CSS
+        console.log("Overlay shown for card");
     }
 
     // Check if element is centered in viewport (for mobile)
@@ -203,14 +157,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const viewportCenter = windowHeight / 2;
         // How far element is from center
         const distanceFromCenter = Math.abs(elementCenter - viewportCenter);
-        // Element is considered "centered" if within 20% of viewport center (more strict)
-        const threshold = windowHeight * 0.2;
+        // Element is considered "centered" if within 30% of viewport center
+        const threshold = windowHeight * 0.3;
 
-        // Also check element is actually visible with more height visible
+        // Also check element is actually visible
         const isVisible = (
             rect.bottom > 0 &&
-            rect.top < windowHeight &&
-            rect.height * 0.6 < windowHeight // At least 60% visible
+            rect.top < windowHeight
         );
 
         return isVisible && (distanceFromCenter < threshold);
@@ -298,48 +251,26 @@ document.addEventListener('DOMContentLoaded', () => {
         let isScrolling = false;
         let scrollTimeout;
         let scrollEndTimeout;
-        let lastScrollPosition = window.scrollY;
-        let scrollStableCount = 0;
-        let activationDebounce = null;
 
-        // Improved scroll handler with debouncing
+        // Throttled scroll handler
         const handleScroll = () => {
             isScrolling = true;
-            const currentScrollPosition = window.scrollY;
-            
-            // Check if scroll is relatively stable
-            const scrollDifference = Math.abs(currentScrollPosition - lastScrollPosition);
-            
-            // Only make changes when scroll is relatively stable or significant movement
-            if (scrollDifference < 5) {
-                scrollStableCount++;
-            } else {
-                scrollStableCount = 0;
-            }
-            
-            // Process videos only when scrolling has stabilized somewhat or significant scroll
-            if (scrollStableCount >= 2 || scrollDifference > 50) {
-                // Process one card at a time for smoother performance
-                const centeredCard = Array.from(galleryCards).find(card => isElementCentered(card));
+
+            // Refresh playing status based on viewport position
+            galleryCards.forEach(card => {
+                const video = card.querySelector('video');
+                const isCentered = isElementCentered(card);
                 
-                if (centeredCard) {
-                    // Debounce activation to prevent flickering
-                    clearTimeout(activationDebounce);
-                    activationDebounce = setTimeout(() => {
-                        handleVideoPlayback(centeredCard, true);
-                        
-                        // Pause all other videos
-                        galleryCards.forEach(card => {
-                            if (card !== centeredCard) {
-                                const video = card.querySelector('video');
-                                if (video && !video.paused) {
-                                    handleVideoPlayback(card, false);
-                                }
-                            }
-                        });
-                    }, 150); // Short delay to confirm center position
+                // Force immediate check of all cards
+                if (isCentered && !card.classList.contains('playing')) {
+                    // Start playing this video only if it's well-centered
+                    handleVideoPlayback(card, true);
+                } else if (!isCentered && (card.classList.contains('playing') || (video && !video.paused))) {
+                    // Stop this video if it's playing or unpaused but not centered
+                    // This double-check ensures we catch any videos that might still be playing
+                    handleVideoPlayback(card, false);
                 }
-            }
+            });
 
             // Clear previous timeouts
             clearTimeout(scrollTimeout);
@@ -349,9 +280,8 @@ document.addEventListener('DOMContentLoaded', () => {
             scrollTimeout = setTimeout(() => {
                 isScrolling = false;
                 
-                // Final check after scrolling stops completely
+                // Final check after scrolling stops to ensure correct state
                 scrollEndTimeout = setTimeout(() => {
-                    // Do a complete check of all videos once scrolling has completely stopped
                     galleryCards.forEach(card => {
                         const video = card.querySelector('video');
                         const isCentered = isElementCentered(card);
@@ -359,35 +289,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!isCentered && video && !video.paused) {
                             // Extra safety - pause any videos still playing but not centered
                             handleVideoPlayback(card, false);
-                        } else if (isCentered && (!video || video.paused) && !card.classList.contains('playing')) {
+                        } else if (isCentered && video && video.paused && !card.classList.contains('playing')) {
                             // If centered but not playing, ensure it plays
                             handleVideoPlayback(card, true);
                         }
                     });
-                }, 200);
-            }, 150);
-            
-            lastScrollPosition = currentScrollPosition;
+                }, 150);
+            }, 100);
         };
 
-        // Listen for scroll events with improved throttling
-        let lastScrollProcessTime = 0;
+        // Listen for scroll events with throttling
+        let lastScrollTime = 0;
         window.addEventListener('scroll', () => {
             const now = Date.now();
-            // Less frequent processing for better performance
-            if (now - lastScrollProcessTime > 100) {
-                lastScrollProcessTime = now;
+            if (now - lastScrollTime > 80) { // Slightly more frequent checks
+                lastScrollTime = now;
                 handleScroll();
             }
         });
         
-        // Also check on touch events for mobile
+        // Also check on touch events end for mobile devices
         window.addEventListener('touchend', () => {
-            // After touch ends, do a full final check
-            setTimeout(() => {
-                scrollStableCount = 3; // Force stability check to pass
-                handleScroll();
-            }, 150);
+            setTimeout(handleScroll, 100); // Check after touch ends
         });
     }
 
