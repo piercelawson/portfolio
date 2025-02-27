@@ -303,6 +303,7 @@ header p {
 
 .gallery-overlay.hidden {
     opacity: 0 !important;
+    transition: opacity 0.3s ease;
 }
 
 .gallery-overlay h3 {
