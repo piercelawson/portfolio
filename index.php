@@ -34,11 +34,11 @@
             <?php
             $projects = [
                 ['href' => 'project1.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Education Credit Union - Auto Loan Refinancing', 'poster' => 'assets/media/video/APH-0924-115R-poster.jpg'],
-                ['href' => 'project2.php', 'src' => 'assets/media/video/APH-0924-115R.mp4', 'title' => 'Project 2', 'poster' => 'assets/media/video/project2-poster.jpg'],
-                ['href' => 'project3.php', 'src' => 'assets/media/video/APH-0924-115R.mp4', 'title' => 'Project 3', 'poster' => 'assets/media/video/project3-poster.jpg'],
-                ['href' => 'project4.php', 'src' => 'assets/media/project4-preview.mp4', 'title' => 'Project 4', 'poster' => 'assets/media/project4-preview-poster.jpg'],
-                ['href' => 'project5.php', 'src' => 'assets/media/project5-preview.mp4', 'title' => 'Project 5', 'poster' => 'assets/media/project5-preview-poster.jpg'],
-                ['href' => 'project6.php', 'src' => 'assets/media/project6-preview.mp4', 'title' => 'Project 6', 'poster' => 'assets/media/project6-preview-poster.jpg'],
+                ['href' => 'project2.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Project 2', 'poster' => 'assets/media/video/project2-poster.jpg'],
+                ['href' => 'project3.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Project 3', 'poster' => 'assets/media/video/project3-poster.jpg'],
+                ['href' => 'project4.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Project 4', 'poster' => 'assets/media/project4-preview-poster.jpg'],
+                ['href' => 'project5.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Project 5', 'poster' => 'assets/media/project5-preview-poster.jpg'],
+                ['href' => 'project6.php', 'src' => 'https://www.w3schools.com/html/mov_bbb.mp4', 'title' => 'Project 6', 'poster' => 'assets/media/project6-preview-poster.jpg'],
                 ['href' => 'graphic-design.php', 'src' => 'assets/media/graphic-design/graphic1.jpg', 'title' => 'Graphic Design Works', 'isImage' => true]
             ];
             foreach ($projects as $project) {
