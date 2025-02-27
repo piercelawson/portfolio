@@ -112,13 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!overlay) return;
 
         clearTimeout(overlayTimeout);
-
         if (delay > 0) {
             overlayTimeout = setTimeout(() => {
                 overlay.classList.add('hidden');
+                overlay.style.opacity = '0';
+                console.log("Overlay hidden after 2s for:", card.textContent || "unknown");
             }, delay);
         } else {
             overlay.classList.add('hidden');
+            overlay.style.opacity = '0';
         }
     }
 
@@ -131,6 +133,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         clearTimeout(overlayTimeout);
         overlay.classList.remove('hidden');
+        overlay.style.opacity = '1';
+        console.log("Overlay shown for card");
     }
 
     // Check if element is centered in viewport (for mobile)
@@ -161,53 +165,36 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!card) return;
 
         const video = card.querySelector('video');
-        if (!video) return;
-
-        // Initialize state tracking if needed
-        if (!videoStates.has(video)) {
-            videoStates.set(video, {
-                lastTime: 0,
-                isReady: video.classList.contains('ready')
-            });
+        if (!video) {
+            console.log("No video found in card:", card);
+            return;
         }
 
-        // Get current state
-        const state = videoStates.get(video);
+        const overlay = card.querySelector('.gallery-overlay');
+        if (!overlay) {
+            console.log("No overlay found in card:", card);
+            return;
+        }
 
+        // If this is a video we want to play
         if (shouldPlay) {
-            // If we should play this video
-
-            // If it's already playing, don't do anything
-            if (!video.paused) return;
-
-            // Pause any currently playing video first
+            // Check if we're playing a different video already
             if (currentPlaying && currentPlaying !== video) {
                 const previousCard = currentPlaying.closest('.gallery-card');
-                if (previousCard) {
-                    pauseVideo(currentPlaying);
-                    showOverlay(previousCard);
-                    previousCard.classList.remove('playing');
-                }
+                pauseVideo(currentPlaying);
+                showOverlay(previousCard);
+                previousCard.classList.remove('playing');
             }
 
-            // Try to resume from last position
-            if (state && state.lastTime > 0) {
-                try {
-                    video.currentTime = state.lastTime;
-                } catch (e) {
-                    console.warn("Error setting video time:", e);
-                }
-            }
+            // Now play the new video
+            playVideo(video);
+            card.classList.add('playing');
+            currentPlaying = video;
 
-            // Play the video
-            if (playVideo(video)) {
-                console.log("Playing video:", video.src);
-                card.classList.add('playing');
-
-                // Hide overlay text (with delay on mobile)
-                const delay = isMobile ? 1500 : 0;
-                hideOverlay(card, delay);
-            }
+            // Hide overlay text (with delay on mobile)
+            const delay = isMobile ? 1500 : 0;
+            hideOverlay(card, delay);
+            console.log("Hiding overlay for playing video");
         } else {
             // If we should stop this video
 
@@ -217,6 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Show overlay immediately
             showOverlay(card);
             card.classList.remove('playing');
+            console.log("Showing overlay for paused video");
 
             // If this was the current video, clear that reference
             if (currentPlaying === video) {

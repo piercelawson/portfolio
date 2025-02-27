@@ -348,11 +348,16 @@ header p {
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    opacity: 1;
+    z-index: 5;
+    pointer-events: none; /* Allow clicks to pass through */
+    transition: opacity 0.3s ease;
 }
 
 .gallery-overlay.hidden {
     opacity: 0 !important;
     transition: opacity 0.3s ease;
+    visibility: visible !important; /* Ensure visibility */
 }
 
 .gallery-overlay h3 {
