@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    
+
     <header>
         <h1>Pierce Lawson</h1>
         <p>Animator | Visionary | Creator</p>
@@ -46,7 +46,7 @@
                 if (isset($project['isImage'])) {
                     echo '<img src="' . $project['src'] . '" alt="' . $project['title'] . '">';
                 } else {
-                    echo '<video muted loop playsinline poster="' . ($project['poster'] ?? '') . '"><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn’t support video.</video>';
+                    echo '<video muted loop playsinline preload="metadata" poster="' . ($project['poster'] ?? '') . '"><source src="' . $project['src'] . '" type="video/mp4">Your browser doesn\'t support video.</video>';
                 }
                 echo '<div class="gallery-overlay"><h3>' . $project['title'] . '</h3></div></div></a></div>';
             }

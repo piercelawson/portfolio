@@ -25,6 +25,38 @@ document.addEventListener('DOMContentLoaded', () => {
             rect.top <= window.innerHeight - rect.height/2
         );
     }
+    
+    // Better viewport detection for smoother mobile experience
+    function isInViewportBetter(element) {
+        const rect = element.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        
+        // Calculate visibility percentage (how much of the element is visible)
+        const visibleHeight = Math.min(rect.bottom, windowHeight) - Math.max(rect.top, 0);
+        const visiblePercentage = visibleHeight / rect.height;
+        
+        // Element is considered in viewport if at least 40% visible
+        return visiblePercentage >= 0.4;
+    }
+    
+    // Preload all videos to prevent stuttering on mobile
+    function preloadVideos() {
+        galleryCards.forEach(card => {
+            const video = card.querySelector('video');
+            if (video) {
+                // Set low-priority loading
+                video.preload = "metadata";
+                
+                // Attempt to preload a bit of the video
+                setTimeout(() => {
+                    video.load();
+                }, 500);
+            }
+        });
+    }
+    
+    // Call preload on page load
+    preloadVideos();
 
     // Hide overlay with delay for mobile
     function hideOverlayWithDelay(card, delay = 0) {
@@ -54,24 +86,25 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("Overlay reset for card:", card);
     }
 
-    // Handle video playback
+    // Handle video playback with optimizations
     function handleVideoPlayback(card, shouldPlay) {
         const video = card.querySelector('video');
         if (!video) {
-            console.log("No video found in card:", card);
             return;
         }
         
-        console.log("Video found in card:", video.src);
-        
-        if (shouldPlay) {
+        // Prevent constant start/stop cycles
+        // Only change state if the video isn't already in the desired state
+        if (shouldPlay && (video.paused || video.ended)) {
             if (!playedVideos.has(video)) {
-                console.log("First play for video:", video.src);
                 playedVideos.add(video);
+                
+                // For first play, make sure video is properly loaded
+                video.load();
             }
             
+            // Use a silent catch to prevent console errors on mobile autoplay restrictions
             video.play().then(() => {
-                console.log("Playing video:", video.src);
                 card.classList.add('playing');
                 
                 // For mobile, hide overlay after 1.5s 
@@ -88,10 +121,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 
                 currentPlaying = video;
-            }).catch(err => {
-                console.log("Mobile video playback failed:", video.src, err);
-            });
-        } else {
+            }).catch(() => {});
+            
+        } else if (!shouldPlay && !video.paused) {
             video.pause();
             card.classList.remove('playing');
             showOverlay(card);
@@ -111,11 +143,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Mobile scroll behavior
+    // Mobile scroll behavior with debounce
     if (isMobile) {
+        let scrollTimeout;
+        let lastCheckTime = 0;
+        const THROTTLE_DELAY = 300; // Only check every 300ms to avoid rapid start/stop
+        
         function checkVideoVisibility() {
+            // Don't check too frequently
+            const now = Date.now();
+            if (now - lastCheckTime < THROTTLE_DELAY) return;
+            lastCheckTime = now;
+            
             galleryCards.forEach(card => {
-                if (isInViewport(card)) {
+                // More generous viewport check (75% visibility)
+                if (isInViewportBetter(card)) {
                     handleVideoPlayback(card, true);
                 } else {
                     handleVideoPlayback(card, false);
@@ -123,12 +165,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Initial check on page load
-        checkVideoVisibility();
-        
-        // Check on scroll
-        window.addEventListener('scroll', () => {
+        // Initial check on page load with a slight delay to allow videos to load
+        setTimeout(() => {
             checkVideoVisibility();
+        }, 300);
+        
+        // Debounced scroll check
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                checkVideoVisibility();
+            }, 100); // Short delay to debounce rapid scrolling
         });
     }
 
