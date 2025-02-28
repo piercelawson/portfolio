@@ -83,13 +83,15 @@ header p {
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    margin-bottom: 0; /* Remove gap below */
 }
+
 
 .hero-content {
     background: rgba(255, 255, 255, 0.85);
     padding: 2rem;
     border-radius: 15px;
-    width: 100%;
+    width: 80%;
     max-width: 100%;
 }
 
@@ -116,14 +118,92 @@ header p {
     color: #fff;
     text-transform: uppercase;
     text-decoration: none;
-    transition: all 0.3s ease;
+    position: relative; /* For particle positioning */
+    display: inline-block;
+    overflow: hidden; /* Contain particles */
     animation: fadeInUp 1s ease 0.6s backwards;
 }
 
+/* Hover state with pop animation */
 .hero-btn:hover {
-    background: #457b9d;
+    animation: popUp 0.4s ease-out forwards;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    transform: translateY(-3px);
+    transform: translateY(-3px); /* Retain lift effect */
+}
+
+/* Reset animation when hover ends */
+.hero-btn:not(:hover) {
+    animation: popDown 0.4s ease-in forwards;
+}
+
+/* Keyframes for hover on (fast pop, slow settle) */
+@keyframes popUp {
+    0% {
+        transform: scale(1) translateY(0);
+    }
+    50% {
+        transform: scale(1.15) translateY(-5px); /* Quick overshoot */
+    }
+    100% {
+        transform: scale(1.05) translateY(-3px); /* Settle slightly larger */
+    }
+}
+
+/* Keyframes for hover off (fast shrink, slow return) */
+@keyframes popDown {
+    0% {
+        transform: scale(1.05) translateY(-3px);
+    }
+    50% {
+        transform: scale(0.95) translateY(0); /* Quick undershoot */
+    }
+    100% {
+        transform: scale(1) translateY(0); /* Back to normal */
+    }
+}
+
+/* Particle styles */
+.hero-btn::before,
+.hero-btn::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #457b9d; /* Particle color */
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.hero-btn:hover::before {
+    animation: particleLeft 0.6s ease-out forwards;
+}
+
+.hero-btn:hover::after {
+    animation: particleRight 0.6s ease-out forwards;
+}
+
+@keyframes particleLeft {
+    0% {
+        opacity: 1;
+        transform: translate(50%, 50%);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-20px, -20px);
+    }
+}
+
+@keyframes particleRight {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, 50%);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(20px, -20px);
+    }
 }
 
 /* Animations */
@@ -139,64 +219,83 @@ header p {
 
 /* About Section */
 #about {
-    padding: 4rem 1rem;
+    padding: 2rem 3rem; /* Remove top padding, keep bottom and sides */
     text-align: center;
     background: #f1faee;
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-#about h2 {
+.about-content-box {
+    background: rgba(255, 255, 255, 0.85);
+    padding: 2rem;
+    border-radius: 15px;
+    width: 80%;
+    max-width: 1200px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.about-content-box h2 {
     font-family: 'Poppins', sans-serif;
     font-size: clamp(1.8rem, 3vw, 3rem);
     color: #e63946;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    animation: fadeInDown 1s ease;
 }
 
 .about-content {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
+    gap: 1.5rem;
     justify-content: space-between;
     align-items: center;
 }
 
 .about-text {
-    flex: 0 1 clamp(200px, 40vw, 500px);
-    background: #fff;
-    padding: clamp(0.8rem, 1.5vw, 2rem);
-    border-radius: 15px;
-    border: 2px solid #457b9d;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    flex: 1 1 clamp(200px, 40vw, 500px);
     font-size: clamp(0.9rem, 1.2vw, 1.3rem);
     line-height: 1.9;
     text-align: left;
+    animation: fadeInUp 1s ease 0.3s backwards;
 }
 
 .about-image {
-    flex: 0 1 clamp(200px, 35vw, 450px);
-    display: flex;
-    justify-content: center;
-    margin-left: auto;
-}
-
-.about-image img {
     width: 100%;
-    max-width: clamp(200px, 35vw, 450px);
+    max-width: clamp(150px, 20vw, 250px); /* Smaller, fits better in box */
+    height: auto;
     border-radius: 10px;
     border: 2px solid #457b9d;
     transition: all 0.3s ease;
+    animation: fadeInUp 1s ease 0.6s backwards;
 }
 
-.about-image img:hover {
+.about-image:hover {
     transform: scale(1.03);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .about-content-box {
+        width: 90%;
+        padding: 1.5rem;
+    }
+    .about-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .about-text {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+    .about-image {
+        max-width: clamp(120px, 30vw, 200px); /* Even smaller on mobile */
+    }
+}
 /* Gallery Section */
 #gallery {
     padding: 4rem 1rem;
@@ -249,65 +348,71 @@ header p {
     height: 100%;
     object-fit: cover;
     display: block;
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Video preview styling */
 .gallery-card video.video-preview {
-    background-color: #1d3557; /* Match overlay color */
-    opacity: 0; /* Start fully transparent */
-    transition: opacity 0.3s ease, visibility 0s;
-    /* Maintain first frame visibility */
+    background-color: #1d3557;
+    transition: filter 0.3s ease;
     object-fit: cover;
     min-height: 100%;
-    visibility: hidden; /* Hide until first frame is ready */
-    transform: translateZ(0); /* Hardware acceleration for mobile */
-    will-change: transform, opacity; /* Optimization hint */
     position: relative;
     z-index: 1;
-    /* Prevent Chrome flickering issue */
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+    pointer-events: none;
 }
 
-.gallery-card video.video-preview.ready {
-    opacity: 1;
-    visibility: visible; /* Show once frame is loaded */
-    background-color: transparent; /* Remove background once loaded */
-}
-
-/* Force visibility for mobile */
-@media (max-width: 768px) {
-    .gallery-card video.video-preview {
-        opacity: 1;
-    }
-}
-
-/* Add a paused state for videos */
 .gallery-card video.video-preview.paused {
     filter: brightness(0.9);
 }
 
 .gallery-card.playing video.video-preview {
-    opacity: 1;
+    filter: brightness(1);
 }
 
-/* Desktop behavior */
+/* Desktop behavior (769px to 1730px) */
 @media (min-width: 769px) {
     .gallery-grid {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        grid-auto-rows: minmax(200px, auto);
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+        grid-auto-rows: minmax(225px, auto);
+        gap: 2rem;
     }
-
     .gallery-card:hover {
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 12px 36px rgba(29, 53, 87, 0.2);
     }
-
     .gallery-overlay {
-        opacity: 1; /* Default with thumbnail */
+        opacity: 1;
         transition: opacity 0.3s ease;
     }
-    /* Overlay visibility controlled by JS */
+}
+
+/* Wide desktop behavior (>1730px) */
+@media (min-width: 1731px) {
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* 2 columns */
+        grid-template-rows: repeat(3, minmax(225px, auto)); /* 3 rows to fit 4+2 */
+        gap: 2rem;
+        width: 100%; /* Ensure full width */
+    }
+    /* Top row: First 4 cards */
+    .gallery-item:nth-child(1) .gallery-card { grid-column: 1 / 2; grid-row: 1; width: 100%; }
+    .gallery-item:nth-child(2) .gallery-card { grid-column: 2 / 3; grid-row: 1; width: 100%; }
+    .gallery-item:nth-child(3) .gallery-card { grid-column: 1 / 2; grid-row: 2; width: 100%; }
+    .gallery-item:nth-child(4) .gallery-card { grid-column: 2 / 3; grid-row: 2; width: 100%; }
+    /* Bottom row: Last 2 cards */
+    .gallery-item:nth-child(5) .gallery-card { grid-column: 1 / 2; grid-row: 3; width: 100%; }
+    .gallery-item:nth-child(6) .gallery-card { grid-column: 2 / 3; grid-row: 3; width: 100%; }
+    .gallery-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 36px rgba(29, 53, 87, 0.2);
+    }
+    .gallery-overlay {
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
 }
 
 /* Mobile behavior */
@@ -316,28 +421,26 @@ header p {
         grid-template-columns: 1fr;
         grid-auto-rows: minmax(200px, auto);
     }
-
+    
+    
+  
+    .gallery-card.playing {
+    position: relative;
+        z-index: 2; /* Above overlay */
+    }
+    .gallery-overlay {
+    z-index: 3; /* Above everything */
+    }
     .gallery-card {
         aspect-ratio: 4 / 3;
     }
-
     .gallery-overlay {
-        opacity: 1; /* Default with thumbnail */
-        transition: opacity 0.3s ease;
+        opacity: 1;
+        transition: opacity 0.5s ease;
     }
-
     .gallery-card.playing .gallery-overlay {
-        opacity: 0; /* Hide overlay when playing */
+        opacity: 0;
     }
-}
-
-.gallery-card video.paused {
-    filter: brightness(0.8);
-}
-
-.gallery-card video,
-.gallery-card img {
-    pointer-events: none; /* Prevent manual interaction */
 }
 
 .gallery-overlay {
@@ -350,14 +453,8 @@ header p {
     padding: 1rem;
     opacity: 1;
     z-index: 5;
-    pointer-events: none; /* Allow clicks to pass through */
+    pointer-events: none;
     transition: opacity 0.3s ease;
-}
-
-.gallery-overlay.hidden {
-    opacity: 0 !important;
-    transition: opacity 0.3s ease;
-    visibility: visible !important; /* Ensure visibility */
 }
 
 .gallery-overlay h3 {
@@ -371,6 +468,44 @@ header p {
     border-radius: 8px;
 }
 
+/* Mobile vignette effect */
+@media (max-width: 768px) {
+    .gallery-grid {
+        grid-template-columns: 1fr;
+        grid-auto-rows: minmax(200px, auto);
+        position: relative;
+    }
+
+    /* Vignette overlay */
+    #gallery.vignette-active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.7) 0%,
+            rgba(0, 0, 0, 0) 20%,
+            rgba(0, 0, 0, 0) 80%,
+            rgba(0, 0, 0, 0.7) 100%
+        );
+        pointer-events: none;
+        z-index: 2; /* Above cards, below overlays */
+    }
+
+    /* Ensure playing card stands out */
+    .gallery-card.playing {
+        position: relative;
+        z-index: 3; /* Above vignette */
+    }
+
+    /* Dim non-playing cards */
+    .gallery-card:not(.playing) video.video-preview {
+        filter: brightness(0.5); /* Darken non-playing videos */
+    }
+}
 /* Footer */
 footer {
     background: #e63946;
@@ -553,3 +688,4 @@ footer a:hover {
         padding: 1rem 2rem;
     }
 }
+

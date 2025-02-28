@@ -1,21 +1,58 @@
-/* assets/css/spinning-circle.css */
 .spinning-circle-link {
     position: fixed;
     bottom: 20px;
     right: 20px;
     width: 120px;
     height: 120px;
-    z-index: 1000;
+    z-index: 50;
 }
 
 .spinning-circle {
     width: 100%;
     height: 100%;
+    transform: scale(0.75);
     transform-origin: center;
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease; /* Smooth scaling and fading */
+    transition: opacity 0.3s ease;
+    mix-blend-mode: difference; /* Inverts color based on background */
+    isolation: isolate; /* Prevents blending with parent elements */
+}
+
+/* Hover state with speed ramp animation */
+.spinning-circle-link:hover .spinning-circle {
+    animation: scaleUpRamp 0.5s ease-out forwards;
+}
+
+/* Reset animation when hover ends */
+.spinning-circle-link:not(:hover) .spinning-circle {
+    animation: scaleDownRamp 0.5s ease-in forwards;
 }
 
 .spinning-group {
-    transform-origin: 60px 60px; /* Center of 120px × 120px (120/2 = 60px) */
-    will-change: transform;
+    transform-origin: 70px 70px;
+}
+
+/* Keyframes for hover on */
+@keyframes scaleUpRamp {
+    0% {
+        transform: scale(0.75);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Keyframes for hover off */
+@keyframes scaleDownRamp {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.65);
+    }
+    100% {
+        transform: scale(0.75);
+    }
 }
